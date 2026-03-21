@@ -12,5 +12,15 @@
         loki_shipper {$LOKI_AUTH_HASH}
     }
 
-    reverse_proxy loki:3100
+    basicauth /api/v1/write {
+        loki_shipper {$LOKI_AUTH_HASH}
+    }
+
+    handle_path /loki/* {
+        reverse_proxy loki:3100
+    }
+
+    handle /api/v1/write {
+        reverse_proxy prometheus:9090
+    }
 }

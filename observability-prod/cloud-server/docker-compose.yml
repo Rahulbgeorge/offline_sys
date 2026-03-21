@@ -44,6 +44,20 @@ services:
     networks:
       - observability_prod_net
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: observability-prod-prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./data/prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-remote-write-receiver'
+    restart: unless-stopped
+    networks:
+      - observability_prod_net
+
 networks:
   observability_prod_net:
     driver: bridge
