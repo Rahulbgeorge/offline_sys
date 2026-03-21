@@ -31,7 +31,11 @@ mkdir -p /run/sshd
 
 # Start Gunicorn Backend
 source /root/server/venv/bin/activate
-cd /root/server/app
+if [ -d "/root/server/app/dummy-fastapi-server" ]; then
+    cd /root/server/app/dummy-fastapi-server
+else
+    cd /root/server/app
+fi
 gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8000 --daemon
 cd -
 
@@ -59,7 +63,7 @@ fi
 
 echo "====================================="
 echo "Starting Caddy in foreground (SSL reverse proxy)..."
-echo "You can access the server at https://localhost:8000 or https://localhost"
+echo "You can access the server at https://localhost"
 echo "====================================="
 
 caddy run --config /etc/caddy/Caddyfile

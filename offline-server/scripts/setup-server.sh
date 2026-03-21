@@ -20,8 +20,14 @@ source venv/bin/activate
 # 3. Clone Repository
 echo "--> Cloning repository..."
 if [ -n "$GIT_REPO_URL" ]; then
-    echo "Cloning $GIT_REPO_URL..."
-    git clone "$GIT_REPO_URL" app
+    if [ ! -d "app" ]; then
+        echo "Cloning $GIT_REPO_URL..."
+        git clone "$GIT_REPO_URL" app
+    else
+        echo "Updating existing repository in 'app'..."
+        cd app && git pull origin main || true
+        cd ..
+    fi
 else
     echo "GIT_REPO_URL environment variable not found, creating dummy app layout"
     mkdir -p app
@@ -29,7 +35,8 @@ fi
 
 # 4. Dummy FastAPI & Gunicorn setup
 echo "--> Initializing FastAPI backend..."
-cat << 'EOF' > /root/server/app/main.py
+if [ ! -f "/root/server/app/dummy-fastapi-server/main.py" ] && [ ! -f "/root/server/app/main.py" ]; then
+    cat << 'EOF' > /root/server/app/main.py
 from fastapi import FastAPI
 
 app = FastAPI()
@@ -38,7 +45,13 @@ app = FastAPI()
 def read_root():
     return {"status": "ok", "message": "Offline Server Running!"}
 EOF
+fi
 
+if [ -f "/root/server/app/dummy-fastapi-server/requirements.txt" ]; then
+    pip install -r /root/server/app/dummy-fastapi-server/requirements.txt
+elif [ -f "/root/server/app/requirements.txt" ]; then
+    pip install -r /root/server/app/requirements.txt
+fi
 pip install fastapi uvicorn gunicorn httpx
 
 echo "--> Creating Systemd Service for Gunicorn..."
@@ -53,7 +66,7 @@ Group=root
 WorkingDirectory=/root/server/app
 Environment="PATH=/root/server/venv/bin"
 # Binding to 127.0.0.1:8000 internally
-ExecStart=/root/server/venv/bin/gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8000
+ExecStart=/bin/bash -c 'if [ -d /root/server/app/dummy-fastapi-server ]; then cd /root/server/app/dummy-fastapi-server; fi && /root/server/venv/bin/gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8000'
 
 [Install]
 WantedBy=multi-user.target
@@ -92,7 +105,7 @@ rm -f /etc/nginx/sites-enabled/default
 echo "--> Configuring Caddy Server (Local SSL proxy to Nginx)..."
 cat << 'EOF' > /etc/caddy/Caddyfile
 # Secure HTTPS reverse proxy to Nginx Load Balancer using Caddy's Local HTTPS
-localhost, localhost:8000 {
+localhost {
     reverse_proxy localhost:8080
 }
 EOF
