@@ -26,7 +26,16 @@ local.file_match "server_logs" {
 
 loki.source.file "local_files" {
   targets    = local.file_match.server_logs.targets
+  forward_to = [loki.process.add_tenant_label.receiver]
+}
+
+loki.process "add_tenant_label" {
   forward_to = [loki.write.remote.receiver]
+  stage.static_labels {
+    values = {
+      "tenant_id" = sys.env("LOKI_TENANT_ID"),
+    }
+  }
 }
 
 loki.write "remote" {
