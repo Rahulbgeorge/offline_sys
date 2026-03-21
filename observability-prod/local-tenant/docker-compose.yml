@@ -1,0 +1,30 @@
+services:
+  alloy:
+    image: grafana/alloy:latest
+    container_name: observability-prod-alloy-edge
+    environment:
+      - TENANT_ID=${TENANT_ID:-tenant-001}
+      - CLOUD_LOKI_URL=${CLOUD_LOKI_URL}
+      - CLOUD_LOKI_USERNAME=${CLOUD_LOKI_USERNAME:-loki_shipper}
+      - CLOUD_LOKI_PASSWORD=${CLOUD_LOKI_PASSWORD}
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy
+      
+      # --------------------------------------------------------------------------------------------------
+      # SCENARIO A: Your FastAPI server is running on the host machine directly
+      # - /var/log/my_fastapi_server:/var/log/tenant_logs
+      
+      # SCENARIO B: Your FastAPI server is in a parallel Docker container writing to a shared volume
+      # Example: Your FastAPI container maps `- /opt/app/logs:/app/logs`
+      # In that case, you mount that same host folder here!
+      # - /opt/app/logs:/var/log/tenant_logs
+      
+      # SCENARIO C: Your FastAPI container only prints to stdout (No log files)
+      # You can mount the Docker socket so Alloy can read the container streams directly:
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+      # - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # --------------------------------------------------------------------------------------------------
+      - ./logs:/var/log/tenant_logs
+    
+    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    restart: unless-stopped

@@ -1,0 +1,49 @@
+services:
+  caddy:
+    image: caddy:alpine
+    container_name: observability-prod-caddy
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "80:80"
+      - "443:443"
+    environment:
+      - LOKI_AUTH_HASH=${LOKI_AUTH_HASH}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./data/caddy_data:/data
+      - ./data/caddy_config:/config
+    networks:
+      - observability_prod_net
+
+  loki:
+    image: grafana/loki:latest
+    container_name: observability-prod-loki
+    volumes:
+      - ./loki:/etc/loki
+      - ./data/loki:/tsdb
+    command: -config.file=/etc/loki/loki-config.yml
+    restart: unless-stopped
+    networks:
+      - observability_prod_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: observability-prod-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - observability_prod_net
+
+networks:
+  observability_prod_net:
+    driver: bridge

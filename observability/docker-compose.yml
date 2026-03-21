@@ -1,0 +1,54 @@
+
+
+services:
+  loki:
+    image: grafana/loki:latest
+    container_name: observability-loki
+    volumes:
+      - ./loki:/etc/loki
+      - ./data/loki:/tsdb
+    command: -config.file=/etc/loki/loki-config.yml
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+    networks:
+      - observability_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: observability-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_LOG_LEVEL=warn
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - observability_net
+
+  # Alloy represents the "tenant edge" log shipper
+  alloy:
+    image: grafana/alloy:latest
+    container_name: observability-alloy-edge
+    environment:
+      - TENANT_ID=${TENANT_ID:-tenant-001}
+      - LOKI_URL=${LOKI_URL:-http://loki:3100/loki/api/v1/push}
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy
+      - ./logs:/var/log/tenant_logs
+    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - observability_net
+
+networks:
+  observability_net:
+    driver: bridge

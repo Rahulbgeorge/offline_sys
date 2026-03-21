@@ -1,0 +1,16 @@
+# This Caddyfile provides an HTTPS reverse proxy and Basic Authentication for Loki
+# Run `docker compose run --rm caddy caddy hash-password --plaintext YOUR_PASSWORD` 
+# to generate the harsh required below!
+
+:8080 {
+    # Provide TLS/HTTPS if attached to a domain:
+    # replace `:8080` with `logs.yourcompany.com`
+
+    basicauth /loki/api/v1/push {
+        # Username: loki_shipper 
+        # Replace the hash with the output of the hash-password command (this example hash expects "super_secret_password")
+        loki_shipper {$LOKI_AUTH_HASH}
+    }
+
+    reverse_proxy loki:3100
+}

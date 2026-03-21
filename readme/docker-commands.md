@@ -1,5 +1,22 @@
 # Docker & Docker Compose — Command Reference
 
+## Table of Contents
+- [Starting a Stack from a Compose File](#starting-a-stack-from-a-compose-file)
+- [Stopping a Stack](#stopping-a-stack)
+- [Restarting](#restarting)
+- [When You Change the .env File](#when-you-change-the-env-file)
+- [When You Change a Config File (e.g. prometheus.yml, loki.yml)](#when-you-change-a-config-file-eg-prometheusyml-lokiyml)
+- [When You Change the docker-compose.yml Itself](#when-you-change-the-docker-composeyml-itself)
+- [Viewing Logs](#viewing-logs)
+- [Status & Inspection](#status--inspection)
+- [Volume Management (Exploring & Killing)](#volume-management-exploring--killing)
+- [Image Management](#image-management)
+- [Getting a Shell & Executing Commands](#getting-a-shell--executing-commands)
+- [Pulling Latest Images](#pulling-latest-images)
+- [Manual Container Control (Killing & Removing)](#manual-container-control-killing--removing)
+- [Cleaning Up (The Nuclear Options)](#cleaning-up-the-nuclear-options)
+- [Quick Cheatsheet](#quick-cheatsheet)
+
 ---
 
 ## Starting a Stack from a Compose File

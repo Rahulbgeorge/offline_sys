@@ -1,0 +1,18 @@
+services:
+  ubuntu-server:
+    build: .
+    container_name: offline-ubuntu
+    privileged: true
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+    env_file:
+      - .env
+      - .env.git
+    volumes:
+      - ./scripts:/scripts
+    ports:
+      - "8081:80"
+      - "8443:443"
+      - "8082:8080" # Example dummy API port
+      - "2222:22" # SSH port mapping if needed
+    command: ["/bin/bash", "/scripts/entrypoint.sh"] # Executes initialization and services
