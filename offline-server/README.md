@@ -53,8 +53,11 @@ docker compose up -d --build
 
 Once booted, the application relies on Caddy to provide instant Local HTTPS. Open your browser and navigate to:
 
-- `https://localhost`
-- `https://localhost:8000`
+- **HTTPS (Caddy SSL)**: `https://localhost:8443`
+- **HTTP (Redirect)**: `http://localhost:8081` (Redirects to HTTPS)
+- **Direct Nginx (Internal API)**: `http://localhost:8082`
+
+> **Domain Support**: If you set `HOST_DOMAIN` in your `.env` (e.g., `sumangali.offlinesys.shop`), Caddy will also respond to that domain. To test locally, you can map this domain to `127.0.0.1` in your host's `/etc/hosts` file and access `https://sumangali.offlinesys.shop:8443`.
 
 ### 4. Remote Administration via SSH
 

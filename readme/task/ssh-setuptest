@@ -1,0 +1,20 @@
+# create a local system docker instance
+
+
+# What to expect, and how to test
+
+- use the docker file under @offline-server, run the file
+- prompt the user for what keys you require freshly and should you updated
+
+Ensure the following output is working
+
+- behind caddy ssl, the server should run
+- curl and check if url is working
+- use the ssh key obtained to try and ssh into the system and check if you are getting statistics of the system
+- ask for the key
+
+
+
+parallely run the 
+
+- loop until you can get the working output

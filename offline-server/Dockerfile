@@ -18,6 +18,7 @@ RUN apt-get update && apt-get upgrade -y && \
     python3-pip \
     python3-venv \
     systemd \
+    systemd-sysv \
     procps \
     net-tools \
     iproute2 \
@@ -25,6 +26,24 @@ RUN apt-get update && apt-get upgrade -y && \
     software-properties-common \
     lsb-release \
     apt-transport-https \
-    ca-certificates
+    ca-certificates \
+    dbus
+
+# Clean up systemd to make it Docker friendly
+RUN cd /lib/systemd/system/sysinit.target.wants/; ls | grep -v systemd-tmpfiles-setup | xargs rm -f; \
+    rm -f /lib/systemd/system/multi-user.target.wants/*; \
+    rm -f /etc/systemd/system/*.wants/*; \
+    rm -f /lib/systemd/system/local-fs.target.wants/*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+    rm -f /lib/systemd/system/basic.target.wants/*; \
+    rm -f /lib/systemd/system/anaconda.target.wants/*; \
+    rm -f /lib/systemd/system/plymouth*; \
+    rm -f /lib/systemd/system/systemd-update-utmp*;
+
+VOLUME ["/sys/fs/cgroup"]
+
+STOPSIGNAL SIGRTMIN+3
 
 WORKDIR /root
+CMD ["/lib/systemd/systemd"]

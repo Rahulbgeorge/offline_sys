@@ -73,7 +73,7 @@ WantedBy=multi-user.target
 EOF
 
 # In a realistic Ubuntu VM we would enable this
-# systemctl enable --now fastapi
+systemctl enable fastapi || true
 
 # 5. Setup Nginx (Load Balancing)
 echo "--> Configuring Nginx for Load Balancing..."
@@ -103,15 +103,25 @@ rm -f /etc/nginx/sites-enabled/default
 
 # 6. Setup Caddy (SSL)
 echo "--> Configuring Caddy Server (Local SSL proxy to Nginx)..."
-cat << 'EOF' > /etc/caddy/Caddyfile
+if [ -z "$HOST_DOMAIN" ] || [ "$HOST_DOMAIN" == "localhost" ]; then
+    DOMAIN_LIST="localhost"
+else
+    DOMAIN_LIST="$HOST_DOMAIN, localhost"
+fi
+
+cat << EOF > /etc/caddy/Caddyfile
 # Secure HTTPS reverse proxy to Nginx Load Balancer using Caddy's Local HTTPS
-localhost {
+$DOMAIN_LIST {
     reverse_proxy localhost:8080
+    tls internal
 }
 EOF
-# systemctl restart caddy
+
+systemctl enable nginx || true
+systemctl enable caddy || true
 
 echo "====================================="
 echo "Server setup complete."
-echo "Note: If running in Docker without systemd, you must manually start gunicorn, nginx, and caddy."
+echo "Supervisor is replaced with systemd."
+echo "Application is served on HTTPS via Caddy (port 443 inside)."
 echo "====================================="

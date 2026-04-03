@@ -30,6 +30,7 @@ chmod 600 /root/.ssh/id_ed25519
 echo "--> Securing SSH by disabling password authentication..."
 sed -i 's/^#*PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
 sed -i 's/^#*PermitRootLogin .*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+sed -i '/pam_nologin.so/d' /etc/pam.d/sshd
 
 # Enable SSH service (if systemctl is available)
 # systemctl enable ssh
@@ -42,12 +43,28 @@ curl -fsSL https://pkg.cloudflare.com/cloudflare-public-v2.gpg | tee /usr/share/
 echo 'deb [signed-by=/usr/share/keyrings/cloudflare-public-v2.gpg] https://pkg.cloudflare.com/cloudflared any main' | tee /etc/apt/sources.list.d/cloudflared.list
 apt-get update && apt-get install -y cloudflared
 
-# 5. Connect Tunnel Config (Execution moved to entrypoint.sh)
-echo "--> Configuring Cloudflared..."
+# 5. Connect Tunnel Config (Systemd Unit Creation)
+echo "--> Configuring Cloudflared as a systemd service..."
 if [ -n "$CLOUDFLARED_TOKEN_NAME" ] && [ "$CLOUDFLARED_TOKEN_NAME" != "my_tunnel_token" ]; then
-    echo "Note: Cloudflare service tunnel will run from entrypoint.sh automatically based on the token."
+    cat << EOF > /etc/systemd/system/cloudflared.service
+[Unit]
+Description=Cloudflare Tunnel Service
+After=network.target
+
+[Service]
+Type=simple
+Environment="CLOUDFLARED_TOKEN_NAME=$CLOUDFLARED_TOKEN_NAME"
+ExecStart=/usr/bin/cloudflared tunnel run --token \$CLOUDFLARED_TOKEN_NAME
+Restart=always
+RestartSec=5s
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl enable cloudflared.service || echo "Systemctl not available yet, will need enabling at boot."
 else
-    echo "CLOUDFLARED_TOKEN_NAME not found or is default. Tunnel won't auto-start."
+    echo "CLOUDFLARED_TOKEN_NAME not found or is default. Tunnel won't be configured as service."
 fi
 
 echo "====================================="

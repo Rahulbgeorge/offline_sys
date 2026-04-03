@@ -15,55 +15,25 @@ echo "--> Running setup-server.sh"
 echo "--> Running setup-ssh-tunnel.sh"
 /scripts/setup-ssh-tunnel.sh
 
-echo "--> Running setup-alloy.sh"
-/scripts/setup-alloy.sh
+# echo "--> Running setup-alloy.sh"
+# /scripts/setup-alloy.sh
 
-echo "--> Running setup-prometheus.sh"
-/scripts/setup-prometheus.sh
+# echo "--> Running setup-prometheus.sh"
+# /scripts/setup-prometheus.sh
 
-echo "====================================="
-echo "Starting Background Services..."
-echo "====================================="
-
-# Start SSH
-mkdir -p /run/sshd
-/usr/sbin/sshd
-
-# Start Gunicorn Backend
-source /root/server/venv/bin/activate
-if [ -d "/root/server/app/dummy-fastapi-server" ]; then
-    cd /root/server/app/dummy-fastapi-server
-else
-    cd /root/server/app
-fi
-gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8000 --daemon
-cd -
-
-# Start Nginx
-service nginx start
-
-# Start Alloy
-if command -v alloy >/dev/null 2>&1; then
-    alloy run /etc/alloy/config.alloy > /root/server/logs/alloy.log 2>&1 &
-fi
-
-# Start Prometheus
-if command -v prometheus >/dev/null 2>&1; then
-    prometheus --config.file=/etc/prometheus/prometheus.yml > /root/server/logs/prometheus.log 2>&1 &
-fi
-if command -v prometheus-node-exporter >/dev/null 2>&1; then
-    prometheus-node-exporter > /root/server/logs/node_exporter.log 2>&1 &
-fi
-
-# Start Cloudflared Tunnel (if token provided)
-if [ -n "$CLOUDFLARED_TOKEN_NAME" ] && [ "$CLOUDFLARED_TOKEN_NAME" != "my_tunnel_token" ]; then
-    echo "Starting Cloudflare Tunnel..."
-    cloudflared tunnel run $CLOUDFLARED_TOKEN_NAME &
-fi
+# 2. Preparation for systemd
+echo "--> Enabling systemd services"
+# Enable services that should start with the container
+systemctl enable ssh
+systemctl enable nginx
+systemctl enable caddy
+systemctl enable fastapi
+systemctl enable cloudflared || true
 
 echo "====================================="
-echo "Starting Caddy in foreground (SSL reverse proxy)..."
-echo "You can access the server at https://localhost"
+echo "Handing over to systemd (PID 1)..."
 echo "====================================="
 
-caddy run --config /etc/caddy/Caddyfile
+# Use exec to replace the shell bash process (PID 1) with systemd.
+exec /lib/systemd/systemd
+
