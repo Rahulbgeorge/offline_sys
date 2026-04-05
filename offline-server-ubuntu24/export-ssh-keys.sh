@@ -17,20 +17,23 @@ EX_PATH="/home/ubuntu/exportable"
 echo "--> Creating export folder at $EX_PATH..."
 mkdir -p "$EX_PATH"
 
-# Copy keys from root's .ssh directory
+# 1. Export Private Key if exists
 if [ -f "/root/.ssh/id_ed25519" ]; then
-    echo "--> Copying SSH keys to $EX_PATH"
+    echo "--> Copying private SSH key to $EX_PATH"
     cp /root/.ssh/id_ed25519 "$EX_PATH/id_ed25519"
     cp /root/.ssh/id_ed25519.pub "$EX_PATH/id_ed25519.pub"
-    cp /root/.ssh/authorized_keys "$EX_PATH/authorized_keys"
-    
-    # Set permissions if 'ubuntu' user exists
-    if id "ubuntu" &>/dev/null; then
-        chown -R ubuntu:ubuntu "$EX_PATH"
-    fi
     chmod 600 "$EX_PATH/id_ed25519"
-    echo "Keys exported successfully."
-else
-    echo "ERROR: Root SSH keys not found in /root/.ssh/id_ed25519. Have they been generated yet?"
-    exit 1
 fi
+
+# 2. Export Authorized Keys if exists
+if [ -f "/root/.ssh/authorized_keys" ]; then
+    echo "--> Copying authorized_keys to $EX_PATH"
+    cp /root/.ssh/authorized_keys "$EX_PATH/authorized_keys"
+fi
+
+# 3. Final Permissions setup
+if id "ubuntu" &>/dev/null; then
+    chown -R ubuntu:ubuntu "$EX_PATH"
+fi
+
+echo "SSH key export task complete."

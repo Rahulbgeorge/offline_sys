@@ -20,15 +20,17 @@ fi
 
 TOKEN=${CLOUDFLARED_TOKEN:-"your_token_here"}
 
-# 1. SSH Generation (SKIPPED: Keys managed manually)
-# echo "--> Configuring SSH..."
-# mkdir -p /root/.ssh
-# if [ ! -f "/root/.ssh/id_ed25519" ]; then
-#     ssh-keygen -t ed25519 -C "offline-server-key" -f /root/.ssh/id_ed25519 -N ""
-#     cat /root/.ssh/id_ed25519.pub >> /root/.ssh/authorized_keys
-# fi
-# chmod 700 /root/.ssh
-# chmod 600 /root/.ssh/authorized_keys
+# 1. SSH Generation
+echo "--> Configuring SSH..."
+mkdir -p /root/.ssh
+if [ -f "./public_key.pub" ]; then
+    echo "--> Installing provided public key to authorized_keys..."
+    cat ./public_key.pub >> /root/.ssh/authorized_keys
+else
+    echo "WARNING: public_key.pub not found, skipping manual key installation."
+fi
+chmod 700 /root/.ssh
+chmod 600 /root/.ssh/authorized_keys
 
 # Secure SSH config
 sed -i 's/^#*PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
