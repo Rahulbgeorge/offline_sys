@@ -30,7 +30,7 @@ bash setup-client-agent.sh
 bash setup-docker.sh
 bash setup-ssh-tunnel.sh
 bash setup-caddy.sh
-bash export-ssh-keys.sh
+# bash export-ssh-keys.sh
 
 echo "====================================="
 echo "INSTALLATION COMPLETE!"
