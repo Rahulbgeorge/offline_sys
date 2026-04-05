@@ -1,0 +1,14 @@
+[Unit]
+Description=System Metrics Collection Agent
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/path/to/offline-sys2
+ExecStart=/path/to/offline-sys2/client-agent/.venv/bin/python3 client-agent/main.py run --store
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

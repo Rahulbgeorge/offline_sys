@@ -26,6 +26,7 @@ fi
 
 # 3. Component Execution
 bash setup-ubuntu-basic.sh
+bash setup-client-agent.sh
 bash setup-docker.sh
 bash setup-ssh-tunnel.sh
 bash setup-caddy.sh
