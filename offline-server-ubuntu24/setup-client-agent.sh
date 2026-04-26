@@ -73,7 +73,7 @@ fi
 
 cat > "$SUPERVISOR_CONF" <<EOF
 [program:$SERVICE_NAME]
-command=$PYTHON_BIN $MAIN_PY run --store
+command=$PYTHON_BIN $MAIN_PY run --store --non-interactive
 directory=$AGENT_DIR
 user=$RUN_USER
 autostart=true

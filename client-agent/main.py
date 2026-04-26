@@ -18,6 +18,7 @@ def add_shared_args(parser):
     parser.add_argument("--tenant-id", type=str, help="Source tenant identifier", default="default-tenant")
     parser.add_argument("--api-url", type=str, help="Server API URL (e.g. http://localhost:8000/api/v1/metrics/)", default="http://127.0.0.1:8000/api/v1/metrics/")
     parser.add_argument("--api-key", type=str, help="Tenant API Key", default="test-key-123")
+    parser.add_argument("--non-interactive", action="store_true", help="Skip setup wizard if config is missing", default=False)
 
 def run_setup():
     print("--- SysWatch Agent Setup ---")
@@ -36,11 +37,11 @@ def run_agent(args):
     config = config_mgr.load_config()
 
     # If no config and no interactive flags and no env domain, trigger setup
-    # If domain is provided, construct the full URL (assume HTTPS for production)
+    # Skip if --non-interactive is passed
     env_domain = os.getenv('AGENT_DOMAIN')
     default_url = "http://127.0.0.1:8000/api/v1/metrics/"
     
-    if not config and args.api_url == default_url and not env_domain:
+    if not config and args.api_url == default_url and not env_domain and not args.non_interactive:
         config = run_setup()
 
     # Use config as base, but environment or args can override
