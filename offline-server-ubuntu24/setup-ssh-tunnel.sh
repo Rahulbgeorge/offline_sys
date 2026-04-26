@@ -20,17 +20,26 @@ fi
 
 TOKEN=${CLOUDFLARED_TOKEN:-"your_token_here"}
 
-# 1. SSH Generation
-echo "--> Configuring SSH..."
-mkdir -p /root/.ssh
-if [ -f "./public_key.pub" ]; then
-    echo "--> Installing provided public key to authorized_keys..."
-    cat ./public_key.pub >> /root/.ssh/authorized_keys
-else
-    echo "WARNING: public_key.pub not found, skipping manual key installation."
-fi
-chmod 700 /root/.ssh
-chmod 600 /root/.ssh/authorized_keys
+# 1. SSH Generation & Multi-User Support
+echo "--> Configuring SSH for root and ubuntu..."
+USERS=("root" "ubuntu")
+
+for USER_NAME in "${USERS[@]}"; do
+    if id "$USER_NAME" &>/dev/null; then
+        USER_HOME=$(eval echo "~$USER_NAME")
+        echo "--> Setting up SSH for $USER_NAME at $USER_HOME..."
+        
+        mkdir -p "$USER_HOME/.ssh"
+        if [ -f "./public_key.pub" ]; then
+            cat ./public_key.pub >> "$USER_HOME/.ssh/authorized_keys"
+        fi
+        
+        # Set proper ownership and permissions
+        chown -R "$USER_NAME:$USER_NAME" "$USER_HOME/.ssh"
+        chmod 700 "$USER_HOME/.ssh"
+        chmod 600 "$USER_HOME/.ssh/authorized_keys"
+    fi
+done
 
 # Secure SSH config
 sed -i 's/^#*PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config

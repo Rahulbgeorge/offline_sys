@@ -46,45 +46,54 @@ else
     pip install psutil requests pydantic
 fi
 
-# 3. Configure systemd service
-echo "--> Configuring systemd service..."
-TEMPLATE_FILE="agent-metrics.service.template"
-SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+# 3. Configure Supervisor
+echo "--> Configuring Supervisor..."
+SUPERVISOR_CONF="/etc/supervisor/conf.d/$SERVICE_NAME.conf"
 
-if [ -f "$TEMPLATE_FILE" ]; then
-    # Construct configuration for systemd
-    PYTHON_BIN="$AGENT_DIR/.venv/bin/python3"
-    MAIN_PY="$AGENT_DIR/main.py"
-    RUN_USER=$(logname || echo "ubuntu")
-    
-    echo "--> Creating service file for user: $RUN_USER"
-
-    # Use a temporary file for construction
-    cp "$TEMPLATE_FILE" "$SERVICE_FILE.tmp"
-    
-    # Apply standard replacements
-    sed -i "s|WorkingDirectory=.*|WorkingDirectory=$AGENT_DIR|" "$SERVICE_FILE.tmp"
-    sed -i "s|ExecStart=.*|ExecStart=$PYTHON_BIN $MAIN_PY run --store|" "$SERVICE_FILE.tmp"
-    sed -i "s|User=.*|User=$RUN_USER|" "$SERVICE_FILE.tmp"
-    
-    # Inject AGENT_DOMAIN if present
-    if [ -n "$AGENT_DOMAIN" ]; then
-        sed -i "/\[Service\]/a Environment=\"AGENT_DOMAIN=$AGENT_DOMAIN\"" "$SERVICE_FILE.tmp"
-        echo "--> Injected AGENT_DOMAIN=$AGENT_DOMAIN into service file"
-    fi
-
-    mv "$SERVICE_FILE.tmp" "$SERVICE_FILE"
-    echo "--> Systemd service file created at $SERVICE_FILE"
-    
-    # Reload systemd and enable service
+# Clean up old systemd service if it exists to avoid conflicts
+if [ -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
+    echo "--> Migrating from systemd to supervisor: removing old service..."
+    systemctl stop $SERVICE_NAME || true
+    systemctl disable $SERVICE_NAME || true
+    rm "/etc/systemd/system/$SERVICE_NAME.service"
     systemctl daemon-reload
-    systemctl enable $SERVICE_NAME
-    systemctl restart $SERVICE_NAME
-    
-    echo "--> $SERVICE_NAME started and enabled."
-else
-    echo "Error: $TEMPLATE_FILE not found in $AGENT_DIR"
-    exit 1
 fi
+
+PYTHON_BIN="$AGENT_DIR/.venv/bin/python3"
+MAIN_PY="$AGENT_DIR/main.py"
+RUN_USER=$(logname || echo "ubuntu")
+
+echo "--> Creating supervisor config for user: $RUN_USER"
+
+# Build environment string for supervisor if AGENT_DOMAIN is set
+ENV_STR=""
+if [ -n "$AGENT_DOMAIN" ]; then
+    ENV_STR="environment=AGENT_DOMAIN=\"$AGENT_DOMAIN\""
+fi
+
+cat > "$SUPERVISOR_CONF" <<EOF
+[program:$SERVICE_NAME]
+command=$PYTHON_BIN $MAIN_PY run --store
+directory=$AGENT_DIR
+user=$RUN_USER
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/$SERVICE_NAME.err.log
+stdout_logfile=/var/log/$SERVICE_NAME.out.log
+$ENV_STR
+EOF
+
+echo "--> Supervisor configuration created at $SUPERVISOR_CONF"
+
+# Reload supervisor and start the service
+# Ensure logs exist and have correct permissions
+touch /var/log/$SERVICE_NAME.err.log /var/log/$SERVICE_NAME.out.log
+chown $RUN_USER:$RUN_USER /var/log/$SERVICE_NAME.*.log
+
+supervisorctl reread
+supervisorctl update
+supervisorctl restart $SERVICE_NAME
+
+echo "--> $SERVICE_NAME started and managed by Supervisor."
 
 echo "Client Agent setup complete."

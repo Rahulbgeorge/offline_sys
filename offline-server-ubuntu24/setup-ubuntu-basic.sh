@@ -32,6 +32,7 @@ apt-get update
 apt-get install -y \
     nano vim sudo openssl python3 \
     procps net-tools iproute2 dbus \
-    caddy openssh-server cloudflared
+    caddy openssh-server cloudflared \
+    python3.12-venv python3-pip supervisor
 
 echo "Basic system setup complete."
