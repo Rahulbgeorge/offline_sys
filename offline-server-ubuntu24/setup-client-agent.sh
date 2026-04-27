@@ -65,10 +65,18 @@ RUN_USER=$(logname || echo "ubuntu")
 
 echo "--> Creating supervisor config for user: $RUN_USER"
 
-# Build environment string for supervisor if AGENT_DOMAIN is set
+# Build environment string for supervisor
+ENV_VARS=()
+[ -n "$AGENT_DOMAIN" ] && ENV_VARS+=("AGENT_DOMAIN=\"$AGENT_DOMAIN\"")
+[ -n "$AGENT_API_KEY" ] && ENV_VARS+=("AGENT_API_KEY=\"$AGENT_API_KEY\"")
+[ -n "$AGENT_API_PASSWORD" ] && ENV_VARS+=("AGENT_API_PASSWORD=\"$AGENT_API_PASSWORD\"")
+[ -n "$AGENT_TENANT_ID" ] && ENV_VARS+=("AGENT_TENANT_ID=\"$AGENT_TENANT_ID\"")
+[ -n "$AGENT_INTERVAL" ] && ENV_VARS+=("AGENT_INTERVAL=\"$AGENT_INTERVAL\"")
+
 ENV_STR=""
-if [ -n "$AGENT_DOMAIN" ]; then
-    ENV_STR="environment=AGENT_DOMAIN=\"$AGENT_DOMAIN\""
+if [ ${#ENV_VARS[@]} -gt 0 ]; then
+    # Create the environment string, joined by commas
+    ENV_STR="environment=$(IFS=,; echo "${ENV_VARS[*]}")"
 fi
 
 cat > "$SUPERVISOR_CONF" <<EOF

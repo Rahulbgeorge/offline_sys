@@ -54,9 +54,11 @@ def run_agent(args):
     else:
         api_url = args.api_url if args.api_url != default_url else config.get('api_url', args.api_url)
     
-    api_key = args.api_key if args.api_key != "test-key-123" else config.get('api_key', args.api_key)
-    interval = args.interval if args.interval != 60 else int(config.get('interval', 60))
-    tenant_id = args.tenant_id if args.tenant_id != "default-tenant" else config.get('tenant_id', "default-tenant")
+    # Priority: Command Line Args > Environment Variables > Config File > Hardcoded Defaults
+    api_key = args.api_key if args.api_key != "test-key-123" else (os.getenv('AGENT_API_KEY') or config.get('api_key', args.api_key))
+    interval = args.interval if args.interval != 60 else int(os.getenv('AGENT_INTERVAL') or config.get('interval', 60))
+    tenant_id = args.tenant_id if args.tenant_id != "default-tenant" else (os.getenv('AGENT_TENANT_ID') or config.get('tenant_id', "default-tenant"))
+    api_password = os.getenv('AGENT_API_PASSWORD') or config.get('api_password')
 
     # Initialize Storage
     storage = None
@@ -68,7 +70,6 @@ def run_agent(args):
     exporters = []
     exporters.append(ConsoleExporter(as_json=args.json))
     
-    api_password = config.get('api_password')
     if api_url and api_key:
         exporters.append(ApiExporter(api_url=api_url, api_key=api_key, api_password=api_password))
     
