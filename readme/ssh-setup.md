@@ -172,3 +172,7 @@ If you see `dial tcp: lookup sumangali.offlinesys.com: no such host`, it means o
 3. `docker cp offline-ubuntu:/root/.ssh/id_ed25519 ./sumangali`
 4. `chmod 600 ./sumangali`
 5. `ssh -i ./sumangali -o ProxyCommand="cloudflared access ssh --hostname sumangali.offlinesys.com" root@sumangali.offlinesys.com`
+
+
+
+ssh -i venk1_id_rsa.txt -o ProxyCommand="cloudflared access ssh --hostname venk1.offlinesys.shop" ubuntu@venk1.offlinesys.shop

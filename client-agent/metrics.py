@@ -6,6 +6,13 @@ import platform
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
 
+from adapters import NetworkAdapter, SupervisorAdapter, LastLoginAdapter
+
+# Global adapters for stateful metrics
+last_login_adapter = LastLoginAdapter()
+network_adapter = NetworkAdapter()
+supervisor_adapter = SupervisorAdapter()
+
 # --- Pydantic Models for Structured Data ---
 
 class CPUCoreMetrics(BaseModel):
@@ -54,11 +61,23 @@ class NetworkInterfaceMetrics(BaseModel):
     dropin: int
     dropout: int
 
+class SupervisorServiceMetrics(BaseModel):
+    name: str
+    status: str
+    details: str
+
+class LastLoginMetrics(BaseModel):
+    raw_login_string: str
+    user: str
+
 class SystemMetrics(BaseModel):
     cpu: CPUMetrics
     ram: RAMMetrics
     disk: DiskMetrics
     network: Dict[str, NetworkInterfaceMetrics]
+    local_ip: str
+    supervisor_services: List[SupervisorServiceMetrics]
+    last_login: Optional[LastLoginMetrics] = None
 
 class SummaryMetrics(BaseModel):
     cpu_usage_avg: float
@@ -67,6 +86,9 @@ class SummaryMetrics(BaseModel):
     net_sent_total: int
     net_recv_total: int
     system_health: str = "OK"
+    local_ip: str
+    supervisor_services: List[SupervisorServiceMetrics]
+    last_login: Optional[LastLoginMetrics] = None
 
 # --- Helper Functions for Advanced Metrics ---
 
@@ -203,7 +225,10 @@ def collect_all_metrics() -> SystemMetrics:
         cpu=get_cpu_metrics(),
         ram=get_ram_metrics(),
         disk=get_disk_metrics(),
-        network=get_network_metrics()
+        network=get_network_metrics(),
+        local_ip=network_adapter.get_local_ip(),
+        supervisor_services=supervisor_adapter.get_services(),
+        last_login=last_login_adapter.get_last_login()
     )
 
 def get_summary_metrics() -> SummaryMetrics:
@@ -221,7 +246,10 @@ def get_summary_metrics() -> SummaryMetrics:
         disk_usage_pct_max=max_disk_pct,
         net_sent_total=net_totals.bytes_sent,
         net_recv_total=net_totals.bytes_recv,
-        system_health=disk.health_summary
+        system_health=disk.health_summary,
+        local_ip=network_adapter.get_local_ip(),
+        supervisor_services=supervisor_adapter.get_services(),
+        last_login=last_login_adapter.get_last_login()
     )
 
 if __name__ == "__main__":
